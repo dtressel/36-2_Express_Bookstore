@@ -1,5 +1,9 @@
 const express = require("express");
 const Book = require("../models/book");
+const ExpressError = require('../expressError');
+
+const jsonschema = require('jsonschema');
+const bookSchema = require('../schemas/bookSchema.json');
 
 const router = new express.Router();
 
@@ -30,6 +34,15 @@ router.get("/:id", async function (req, res, next) {
 
 router.post("/", async function (req, res, next) {
   try {
+    // Validate request
+    const validation = jsonschema.validate(req.body, bookSchema);
+    if (!validation.valid) {
+      const errorsList = validation.errors.map(error => {
+        return `${error.path[0]} must be of type ${error.schema.type}`;
+      });
+      throw new ExpressError(errorsList, 400);
+    }
+    // Add book to database
     const book = await Book.create(req.body);
     return res.status(201).json({ book });
   } catch (err) {
@@ -41,6 +54,15 @@ router.post("/", async function (req, res, next) {
 
 router.put("/:isbn", async function (req, res, next) {
   try {
+    // Validate request
+    const validation = jsonschema.validate(req.body, bookSchema);
+    if (!validation.valid) {
+      const errorsList = validation.errors.map(error => {
+        return `${error.path[0]} must be of type ${error.schema.type}`;
+      });
+      throw new ExpressError(errorsList, 400);
+    }
+    // Update book in database
     const book = await Book.update(req.params.isbn, req.body);
     return res.json({ book });
   } catch (err) {
